@@ -1,15 +1,14 @@
 #include "mr_isam2/MRISAM2.h"
 
 #include <gtsam/inference/LabeledSymbol.h>
+#include <time.h>
 
 #include <queue>
-#include <time.h>
 
 namespace gtsam {
 
 /* ************************************************************************* */
-MRISAM2::CliqueSet MRISAM2::markCliques(const SharedClique root_clique,
-                                        const KeySet& affected_keys,
+MRISAM2::CliqueSet MRISAM2::markCliques(const SharedClique root_clique, const KeySet& affected_keys,
                                         const KeySet& relin_keys) const {
   CliqueSet top_cliques;
   if (affected_keys.empty() && relin_keys.empty()) {
@@ -66,8 +65,7 @@ MRISAM2::CliqueSet MRISAM2::markCliques(const SharedClique root_clique,
       }
     }
 
-    if (!affected_keys_remain.empty() || !relin_keys_remain.empty() ||
-        has_relin) {
+    if (!affected_keys_remain.empty() || !relin_keys_remain.empty() || has_relin) {
       CliqueVector neighbor_cliques = current_clique->neighborCliques();
       for (SharedClique neighbor_clique : neighbor_cliques) {
         if (neighbor_clique != parent_clique) {
@@ -80,10 +78,8 @@ MRISAM2::CliqueSet MRISAM2::markCliques(const SharedClique root_clique,
 }
 
 /* ************************************************************************* */
-MRISAM2::EdgeVector MRISAM2::extractTop(const SharedClique root_clique,
-                                        const CliqueSet& top_cliques,
-                                        FactorIndices& top_factor_indices,
-                                        KeySet& top_keys) const {
+MRISAM2::EdgeVector MRISAM2::extractTop(const SharedClique root_clique, const CliqueSet& top_cliques,
+                                        FactorIndices& top_factor_indices, KeySet& top_keys) const {
   EdgeVector orphan_edges;
 
   if (top_cliques.empty()) {
@@ -99,14 +95,12 @@ MRISAM2::EdgeVector MRISAM2::extractTop(const SharedClique root_clique,
     bfs.pop();
 
     if (current_clique == root_clique) {
-      for (FactorIndex i : root_clique->factorIndicesInClique(
-               linear_factors_, variable_index_)) {
+      for (FactorIndex i : root_clique->factorIndicesInClique(linear_factors_, variable_index_)) {
         top_factor_indices.push_back(i);
       }
     } else {
       SharedEdge edge = parent_clique->childEdge(current_clique);
-      for (FactorIndex i :
-           edge->elimFactorIndices(linear_factors_, variable_index_)) {
+      for (FactorIndex i : edge->elimFactorIndices(linear_factors_, variable_index_)) {
         top_factor_indices.push_back(i);
       }
     }
@@ -136,17 +130,14 @@ MRISAM2::EdgeVector MRISAM2::extractTop(const SharedClique root_clique,
 }
 
 /* ************************************************************************* */
-MRISAM2::EdgeVector MRISAM2::connectOrphans(const RootID root_id,
-                                            MRBT& top_mrbt,
-                                            const EdgeVector& orphan_edges) {
+MRISAM2::EdgeVector MRISAM2::connectOrphans(const RootID root_id, MRBT& top_mrbt, const EdgeVector& orphan_edges) {
   // find the cliques to connect
   FastVector<KeySet> separator_keys_vec;
   for (const SharedEdge& edge : orphan_edges) {
     separator_keys_vec.push_back(edge->separatorKeys());
   }
   SharedClique root_clique = top_mrbt.roots().at(root_id);
-  CliqueVector attached_cliques =
-      top_mrbt.findCliquesByKeys(separator_keys_vec, root_clique);
+  CliqueVector attached_cliques = top_mrbt.findCliquesByKeys(separator_keys_vec, root_clique);
 
   EdgeVector new_edges;
   // connect orphans
@@ -157,8 +148,7 @@ MRISAM2::EdgeVector MRISAM2::connectOrphans(const RootID root_id,
 
     bool dual_direction = orphan_edge->dualDirection();
     if (dual_direction) {
-      orphan_clique->removeEdge(
-          orphan_clique->childEdge(orphan_edge->parentClique()));
+      orphan_clique->removeEdge(orphan_clique->childEdge(orphan_edge->parentClique()));
     }
     orphan_clique->removeEdge(orphan_edge);
     orphan_edge->setParent(attached_clique);
@@ -168,8 +158,7 @@ MRISAM2::EdgeVector MRISAM2::connectOrphans(const RootID root_id,
 
     if (dual_direction) {
       // note: the marginals and conditionals of the edges remain to be computed
-      SharedEdge orphan_edge_reverse =
-          boost::make_shared<Edge>(orphan_clique, attached_clique);
+      SharedEdge orphan_edge_reverse = boost::make_shared<Edge>(orphan_clique, attached_clique);
       orphan_clique->addEdge(orphan_edge_reverse);
       attached_clique->addEdge(orphan_edge_reverse);
     }
@@ -183,27 +172,24 @@ Key MRISAM2::findMostRecentStateKey(const RootID root_id, const SharedClique& ro
   Key most_recent_key;
   for (const Key& key : root_clique->allKeys()) {
     LabeledSymbol symbol(key);
-    if (symbol.chr()=='X' && symbol.label() == root_id + 97) {
+    if (symbol.chr() == 'X' && symbol.label() == root_id + 97) {
       if ((int)symbol.index() > most_recent_index) {
         most_recent_index = symbol.index();
         most_recent_key = key;
       }
     }
   }
-  if (most_recent_index==-1) {
+  if (most_recent_index == -1) {
     return *(root_clique->allKeys().rbegin());
-  }
-  else {
+  } else {
     return most_recent_key;
   }
 }
 
-
 /* ************************************************************************* */
-MRISAM2::EdgeVector MRISAM2::recreateTop(
-    const RootID root_id, CliqueSet& old_top_cliques,
-    const FactorIndices& top_factor_indices, const EdgeVector& orphan_edges,
-    const KeySet& new_factor_keys, MRISAM2Result& update_result) {
+MRISAM2::EdgeVector MRISAM2::recreateTop(const RootID root_id, CliqueSet& old_top_cliques,
+                                         const FactorIndices& top_factor_indices, const EdgeVector& orphan_edges,
+                                         const KeySet& new_factor_keys, MRISAM2Result& update_result) {
   // TODO: also update delta
 
   // check if any other roots is in old_top_cliques
@@ -245,8 +231,7 @@ MRISAM2::EdgeVector MRISAM2::recreateTop(
   for (Key key : new_factor_keys) {
     constraint_groups.insert(std::make_pair(key, group));
   }
-  Ordering order =
-      Ordering::ColamdConstrained(top_var_index, constraint_groups);
+  Ordering order = Ordering::ColamdConstrained(top_var_index, constraint_groups);
   // top_graph.print("top graph:");
   // order.print();
 
@@ -274,8 +259,7 @@ MRISAM2::EdgeVector MRISAM2::recreateTop(
 }
 
 /* ************************************************************************* */
-void MRISAM2::eliminateTop(const RootID root_id,
-                           const EdgeVector& boundary_edges) {
+void MRISAM2::eliminateTop(const RootID root_id, const EdgeVector& boundary_edges) {
   const SharedClique& root_clique = roots_.at(root_id);
   EdgeSet boundary_edges_out, boundary_edges_in;
   for (SharedEdge boundary_edge : boundary_edges) {
@@ -287,16 +271,12 @@ void MRISAM2::eliminateTop(const RootID root_id,
     }
   }
 
-  eliminateNodeBottomUp(root_clique, root_clique, linear_factors_,
-                        variable_index_, params_.eliminate_function,
+  eliminateNodeBottomUp(root_clique, root_clique, linear_factors_, variable_index_, params_.eliminate_function,
                         boundary_edges_out);
-  eliminateNodeTopDown(root_clique, root_clique, linear_factors_,
-                       variable_index_, params_.eliminate_function,
+  eliminateNodeTopDown(root_clique, root_clique, linear_factors_, variable_index_, params_.eliminate_function,
                        boundary_edges_in);
-  computeDelta(root_clique, root_clique, linear_factors_, variable_index_,
-               delta_, -1, boundary_edges_out);
+  computeDelta(root_clique, root_clique, linear_factors_, variable_index_, delta_, -1, boundary_edges_out);
 }
-
 
 double MRISAM2::marginalChangeByGradient(const SharedFactor& old_marginal, const SharedFactor& new_marginal) const {
   VectorValues old_gradient;
@@ -316,7 +296,7 @@ double MRISAM2::marginalChangeByGradient(const SharedFactor& old_marginal, const
   for (Key key : new_keys) {
     new_gradient.insert(key, new_marginal->gradient(key, delta_));
   }
-  
+
   for (Key old_key : old_keys) {
     if (!new_gradient.exists(old_key)) {
       new_gradient.insert(old_key, Vector::Zero(old_gradient[old_key].size()));
@@ -347,7 +327,6 @@ double MRISAM2::marginalChangeByGradient(const SharedFactor& old_marginal, const
 }
 
 double MRISAM2::marginalChangeByKLD(const SharedFactor& old_marginal, const SharedFactor& new_marginal) const {
-
   // TODO: check both factors should contain same keys
 
   // Matrix information_old = old_marginal->information();
@@ -367,23 +346,18 @@ double MRISAM2::marginalChangeByKLD(const SharedFactor& old_marginal, const Shar
 }
 
 /* ************************************************************************* */
-bool MRISAM2::marginalChanged(const SharedFactor& old_marginal,
-                              const SharedFactor& new_marginal) const {
+bool MRISAM2::marginalChanged(const SharedFactor& old_marginal, const SharedFactor& new_marginal) const {
   if (!old_marginal) {
     return true;
   }
 
-  double marginal_change =
-      params_.marginal_change_use_gradient
-          ? marginalChangeByGradient(old_marginal, new_marginal)
-          : marginalChangeByKLD(old_marginal, new_marginal);
+  double marginal_change = params_.marginal_change_use_gradient ? marginalChangeByGradient(old_marginal, new_marginal)
+                                                                : marginalChangeByKLD(old_marginal, new_marginal);
 
   // if (marginal_change >= params_.marginal_update_threshold) {
   //   std::cout << marginal_change << "\n";
   //   std::cout << params_.marginal_update_threshold << "\n";
   // }
-
-  
 
   return marginal_change >= params_.marginal_update_threshold;
 }
@@ -409,12 +383,12 @@ void MRISAM2::propagateMarginalsRecursive(const SharedEdge& edge, MRISAM2Result&
   if (params_.show_details) {
     std::cout << "propagate marginals to edge " << edge->name() << "\n";
   }
-  
+
   bool marginal_changed;
   if (params_.marginal_update_threshold > 0) {
     marginal_changed = marginalChanged(edge->marginal(), elimination_result.second);
   }
-  update_result.propagated_marginal ++;
+  update_result.propagated_marginal++;
   edge->setEliminationResult(elimination_result);
 
   // propagate to further edges TODO: check why it takes so long
@@ -427,10 +401,8 @@ void MRISAM2::propagateMarginalsRecursive(const SharedEdge& edge, MRISAM2Result&
   // }
 }
 
-
 /* ************************************************************************* */
 void MRISAM2::propagateDeltaRecursive(const SharedEdge& edge, MRISAM2Result& update_result) {
-
   bool values_changed = false;
 
   if (params_.show_details) {
@@ -441,7 +413,7 @@ void MRISAM2::propagateDeltaRecursive(const SharedEdge& edge, MRISAM2Result& upd
   // set delta for frontal variables of the edge
   SharedClique clique = edge->childClique();
   SharedClique parent = edge->parentClique();
-  if (params_.delta_update_threshold>0) {
+  if (params_.delta_update_threshold > 0) {
     KeySet frontal_keys_set = edge->frontalKeys();
     KeyVector frontal_keys(frontal_keys_set.begin(), frontal_keys_set.end());
     Vector original_values = delta_.vector(frontal_keys);
@@ -458,33 +430,27 @@ void MRISAM2::propagateDeltaRecursive(const SharedEdge& edge, MRISAM2Result& upd
     }
     if (params_.show_details) {
       for (Key key : frontal_keys) {
-        std::cout << "\t" << MultiRobotKeyFormatter(key) << ": " << original_vector_values.at(key) << " -> " << delta_.at(key) << "\n";
+        std::cout << "\t" << MultiRobotKeyFormatter(key) << ": " << original_vector_values.at(key) << " -> "
+                  << delta_.at(key) << "\n";
       }
     }
-  }
-  else {
+  } else {
     delta_.update(edge->conditional()->solve(delta_));
   }
   update_result.propagated_delta++;
 
   // propagate to further edges
-  if (params_.delta_update_threshold<=0 || values_changed) {
+  if (params_.delta_update_threshold <= 0 || values_changed) {
     for (const SharedClique& child : clique->childCliques()) {
       if (child != parent) {
         propagateDeltaRecursive(clique->childEdge(child), update_result);
       }
     }
   }
-
 }
 
-
-
-
 /* ************************************************************************* */
-void MRISAM2::propagateMarginals(const RootID root_id,
-                                 const EdgeVector& boundary_edges,
-                                 MRISAM2Result& update_result) {
+void MRISAM2::propagateMarginals(const RootID root_id, const EdgeVector& boundary_edges, MRISAM2Result& update_result) {
   for (SharedEdge boundary_edge : boundary_edges) {
     if (boundary_edge->dualDirection()) {
       SharedClique clique = boundary_edge->childClique();
@@ -495,9 +461,7 @@ void MRISAM2::propagateMarginals(const RootID root_id,
 }
 
 /* ************************************************************************* */
-void MRISAM2::propagateDeltas(const RootID root_id,
-                              const EdgeVector& boundary_edges,
-                              MRISAM2Result& update_result) {
+void MRISAM2::propagateDeltas(const RootID root_id, const EdgeVector& boundary_edges, MRISAM2Result& update_result) {
   for (const SharedEdge& boundary_edge : boundary_edges) {
     propagateDeltaRecursive(boundary_edge, update_result);
   }
@@ -508,8 +472,7 @@ void MRISAM2::propagateDeltas(const RootID root_id,
 /* ************************************************************************* */
 
 /* ************************************************************************* */
-void MRISAM2::checkRelinearizationRecursive(const SharedClique& parent,
-                                            const SharedClique& clique,
+void MRISAM2::checkRelinearizationRecursive(const SharedClique& parent, const SharedClique& clique,
                                             KeySet& relin_keys) const {
   KeySet conditionals;
   if (parent == clique) {
@@ -544,8 +507,7 @@ KeySet MRISAM2::gatherRelinearizeKeys(const SharedClique& root_clique) const {
 }
 
 /* ************************************************************************* */
-KeySet MRISAM2::gatherInvolvedKeys(
-    const NonlinearFactorGraph& new_factors) const {
+KeySet MRISAM2::gatherInvolvedKeys(const NonlinearFactorGraph& new_factors) const {
   KeySet new_factor_keys = new_factors.keys();
   KeySet involved_keys;
   for (Key key : new_factors.keys()) {
@@ -557,28 +519,22 @@ KeySet MRISAM2::gatherInvolvedKeys(
 }
 
 /* ************************************************************************* */
-void MRISAM2::updateRootCheck(const RootID root_id,
-                              const NonlinearFactorGraph& new_factors,
-                              const Values& new_theta) {
+void MRISAM2::updateRootCheck(const RootID root_id, const NonlinearFactorGraph& new_factors, const Values& new_theta) {
   if (roots_.find(root_id) == roots_.end()) {
-    throw std::runtime_error("root does not exist at " +
-                             std::to_string(root_id));
+    throw std::runtime_error("root does not exist at " + std::to_string(root_id));
   }
   for (Key key : new_factors.keys()) {
     if (theta_.exists(key) && new_theta.exists(key)) {
-      throw std::runtime_error("providing value that already exists for key " +
-                               MultiRobotKeyFormatter(key));
+      throw std::runtime_error("providing value that already exists for key " + MultiRobotKeyFormatter(key));
     }
     if (!theta_.exists(key) && !new_theta.exists(key)) {
-      throw std::runtime_error("new value not provided for key " +
-                               MultiRobotKeyFormatter(key));
+      throw std::runtime_error("new value not provided for key " + MultiRobotKeyFormatter(key));
     }
   }
 }
 
 /* ************************************************************************* */
-void MRISAM2::relinearizeTop(const KeySet& top_keys,
-                             const FactorIndices& top_factor_indices) {
+void MRISAM2::relinearizeTop(const KeySet& top_keys, const FactorIndices& top_factor_indices) {
   for (Key key : top_keys) {
     theta_.update(key, *theta_.at(key).retract_(delta_.at(key)));
     delta_[key].setZero();
@@ -602,10 +558,8 @@ FactorIndices MRISAM2::addFactors(const NonlinearFactorGraph& new_factors) {
 }
 
 /* ************************************************************************* */
-MRISAM2Result MRISAM2::updateRoot(const RootID root_id,
-                         const NonlinearFactorGraph& new_factors,
-                         const Values& new_theta,
-                         const bool do_relinearization) {
+MRISAM2Result MRISAM2::updateRoot(const RootID root_id, const NonlinearFactorGraph& new_factors,
+                                  const Values& new_theta, const bool do_relinearization) {
   updateRootCheck(root_id, new_factors, new_theta);
   MRISAM2Result update_result;
 
@@ -620,8 +574,7 @@ MRISAM2Result MRISAM2::updateRoot(const RootID root_id,
 
   // mark keys
   update_result.involved_keys = gatherInvolvedKeys(new_factors);
-  update_result.relin_keys =
-      do_relinearization ? gatherRelinearizeKeys(root_clique) : KeySet();
+  update_result.relin_keys = do_relinearization ? gatherRelinearizeKeys(root_clique) : KeySet();
 
   if (params_.show_details) {
     PrintKeySet(update_result.involved_keys, "involved keys: ", MultiRobotKeyFormatter);
@@ -636,7 +589,6 @@ MRISAM2Result MRISAM2::updateRoot(const RootID root_id,
   update_result.old_top_clique_size = top_cliques.size();
   EdgeVector orphan_edges =
       extractTop(root_clique, top_cliques, update_result.top_factor_indices, update_result.top_keys);
-  
 
   update_result.variables_reeliminated = KeySet();
   for (const SharedClique& clique : top_cliques) {
@@ -646,7 +598,6 @@ MRISAM2Result MRISAM2::updateRoot(const RootID root_id,
     update_result.variables_reeliminated.insert(key);
   }
   // PrintKeySet(update_result.variables_reeliminated, "mrisam2_relinkeys: ", MultiRobotKeyFormatter);
-
 
   if (params_.show_details) {
     std::cout << "orphan edges: \n";
@@ -670,14 +621,12 @@ MRISAM2Result MRISAM2::updateRoot(const RootID root_id,
   // add new variables and factors
   addVariables(new_theta);
   FactorIndices new_factors_indices = addFactors(new_factors);
-  update_result.top_factor_indices.insert(update_result.top_factor_indices.end(),
-                            new_factors_indices.begin(),
-                            new_factors_indices.end());
+  update_result.top_factor_indices.insert(update_result.top_factor_indices.end(), new_factors_indices.begin(),
+                                          new_factors_indices.end());
 
   // recreate top
-  EdgeVector boundary_edges =
-      recreateTop(root_id, top_cliques, update_result.top_factor_indices, orphan_edges,
-                  new_factors.keys(), update_result);
+  EdgeVector boundary_edges = recreateTop(root_id, top_cliques, update_result.top_factor_indices, orphan_edges,
+                                          new_factors.keys(), update_result);
 
   times.push_back(clock());
 
@@ -701,17 +650,14 @@ MRISAM2Result MRISAM2::updateRoot(const RootID root_id,
 
   times.push_back(clock());
 
-  for (size_t i=0; i<times.size()-1; i++) {
-    update_result.durations.push_back(times[i+1]-times[i]);
+  for (size_t i = 0; i < times.size() - 1; i++) {
+    update_result.durations.push_back(times[i + 1] - times[i]);
   }
 
   return update_result;
 }
 
 /* ************************************************************************* */
-Values MRISAM2::calculateBestEstimate() {
-  return theta_.retract(delta_);
-}
-
+Values MRISAM2::calculateBestEstimate() { return theta_.retract(delta_); }
 
 }  // namespace gtsam
