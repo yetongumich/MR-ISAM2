@@ -177,7 +177,7 @@ class MRISAM2 : public MRBayesTree<GaussianBayesTree, GaussianFactorGraph> {
 
   MRISAM2Params& params() { return params_; }
 
-  Values calculateBestEstimate();
+  Values calculateEstimate();
 
  protected:
   MRISAM2Params params_;

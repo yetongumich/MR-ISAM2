@@ -658,6 +658,6 @@ MRISAM2Result MRISAM2::updateRoot(const RootID root_id, const NonlinearFactorGra
 }
 
 /* ************************************************************************* */
-Values MRISAM2::calculateBestEstimate() { return theta_.retract(delta_); }
+Values MRISAM2::calculateEstimate() { return theta_.retract(delta_); }
 
 }  // namespace gtsam
