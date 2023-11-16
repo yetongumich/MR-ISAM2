@@ -1,0 +1,5 @@
+data/
+build/
+.vscode/
+visualization/
+.DS_Store
