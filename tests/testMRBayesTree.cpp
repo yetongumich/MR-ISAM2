@@ -1,5 +1,5 @@
-#include "MRBayesTree.h"
-#include "Utils.h"
+#include "mr_isam2/MRBayesTree.h"
+#include "mr_isam2/Utils.h"
 
 #include <CppUnitLite/TestHarness.h>
 #include <gtsam/base/Testable.h>

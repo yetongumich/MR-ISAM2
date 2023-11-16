@@ -1,4 +1,4 @@
-#include "MRBayesTree.h"
+#include "mr_isam2/MRBayesTree.h"
 
 #include <gtsam/linear/GaussianEliminationTree.h>
 #include <gtsam/linear/GaussianJunctionTree.h>
@@ -8,7 +8,7 @@
 #include <iomanip>
 #include <iostream>
 
-#include "Utils.h"
+#include "mr_isam2/Utils.h"
 
 namespace gtsam {
 

@@ -1,4 +1,4 @@
-#include "MRISAM2.h"
+#include "mr_isam2/MRISAM2.h"
 
 #include <gtsam/inference/LabeledSymbol.h>
 

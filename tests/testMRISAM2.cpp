@@ -1,5 +1,5 @@
-#include "MRISAM2.h"
-#include "Utils.h"
+#include "mr_isam2/MRISAM2.h"
+#include "mr_isam2/Utils.h"
 
 #include <CppUnitLite/TestHarness.h>
 #include <gtsam/base/Testable.h>

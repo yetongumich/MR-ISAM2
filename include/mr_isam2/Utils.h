@@ -1,13 +1,17 @@
 #pragma once
+#include <string>
+#include <utility>
+#include <vector>
 
 template <typename Map>
-bool ContainerEqual (Map const &lhs, Map const &rhs) {
-    return lhs.size() == rhs.size()
-        && std::equal(lhs.begin(), lhs.end(), rhs.begin());
+bool ContainerEqual(Map const &lhs, Map const &rhs)
+{
+  return lhs.size() == rhs.size() && std::equal(lhs.begin(), lhs.end(), rhs.begin());
 }
 
-std::string Quoted(const std::string& str) {
-    return "\"" + str + "\"";
+std::string Quoted(const std::string &str)
+{
+  return "\"" + str + "\"";
 }
 
 typedef std::pair<std::string, std::string> AttributeType;
@@ -19,21 +23,26 @@ typedef std::pair<std::string, std::string> AttributeType;
  * indent and no newline
  * @return                  a string representing dict in json format
  */
-std::string JsonDict(const std::vector<AttributeType>& items,
-                                    const int num_indents = 0) {
+std::string JsonDict(const std::vector<AttributeType> &items,
+                     const int num_indents = 0)
+{
   std::string indents;
   std::string s;
-  if (num_indents < 0) {
+  if (num_indents < 0)
+  {
     indents = "";
     s = "{";
-  } else {
+  }
+  else
+  {
     indents = "\n" + std::string(num_indents, ' ');
     s = std::string(num_indents, ' ') + "{";
   }
-  for (auto& item : items) {
+  for (auto &item : items)
+  {
     s += indents + item.first + ":" + item.second + ",";
   }
-  s.pop_back();  // remove the last comma
+  s.pop_back(); // remove the last comma
   s += indents + "}";
   return s;
 }
@@ -45,21 +54,26 @@ std::string JsonDict(const std::vector<AttributeType>& items,
  * indent and no newline
  * @return                  a string representing list in json format
  */
-std::string JsonList(const std::vector<std::string>& items,
-                                    const int num_indents = 0) {
+std::string JsonList(const std::vector<std::string> &items,
+                     const int num_indents = 0)
+{
   std::string indents;
   std::string s;
-  if (num_indents < 0) {
+  if (num_indents < 0)
+  {
     indents = "";
     s = "[";
-  } else {
+  }
+  else
+  {
     indents = "\n" + std::string(num_indents, ' ');
     s = std::string(num_indents, ' ') + "[";
   }
-  for (auto& item : items) {
+  for (auto &item : items)
+  {
     s += indents + item + ",";
   }
-  s.pop_back();  // remove the last comma
+  s.pop_back(); // remove the last comma
   s += indents + "]";
   return s;
 }

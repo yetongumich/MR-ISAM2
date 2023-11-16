@@ -1,6 +1,6 @@
 #pragma once
 
-#include "MRBayesTree.h"
+#include "mr_isam2/MRBayesTree.h"
 
 #include <gtsam/nonlinear/NonlinearFactorGraph.h>
 
