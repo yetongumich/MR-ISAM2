@@ -56,10 +56,8 @@ class MRBayesTree {
    * @param symbolic        if specified, will not perform actual elimination
    * @param elimination_function
    */
-  MRBayesTree(const JunctionTreeType& junction_tree,
-              const FactorGraphType& graph, const RootID root_id,
-              const RootKeySetMap& other_root_keys_map,
-              const bool symbolic = false,
+  MRBayesTree(const JunctionTreeType& junction_tree, const FactorGraphType& graph, const RootID root_id,
+              const RootKeySetMap& other_root_keys_map, const bool symbolic = false,
               const Eliminate& elimination_function = EliminateCholesky);
 
   /** Constructor from factor graph with elimination ordering
@@ -70,8 +68,7 @@ class MRBayesTree {
    * @param symbolic        if specified, will not perform actual elimination
    * @param elimination_function
    */
-  MRBayesTree(const FactorGraphType& graph, const Ordering& order,
-              const RootID root_id,
+  MRBayesTree(const FactorGraphType& graph, const Ordering& order, const RootID root_id,
               const RootKeySetMap& other_root_keys_map, const bool symbolic = false,
               const Eliminate& elimination_function = EliminateCholesky);
 
@@ -93,11 +90,9 @@ class MRBayesTree {
     bool dualDirection() const;
 
     /** find factors to eliminate for this edge */
-    FactorGraphType elimFactors(const FactorGraphType& graph,
-                                const VariableIndex& vi) const;
+    FactorGraphType elimFactors(const FactorGraphType& graph, const VariableIndex& vi) const;
 
-    FactorIndices elimFactorIndices(const FactorGraphType& graph,
-                                    const VariableIndex& vi) const;
+    FactorIndices elimFactorIndices(const FactorGraphType& graph, const VariableIndex& vi) const;
 
     KeySet frontalKeys() const;
 
@@ -111,8 +106,7 @@ class MRBayesTree {
 
     const SharedConditional& conditional() const { return conditional_; }
 
-    std::string name(
-        const KeyFormatter& keyFormatter = MultiRobotKeyFormatter) const;
+    std::string name(const KeyFormatter& keyFormatter = MultiRobotKeyFormatter) const;
 
     void print(const KeyFormatter& keyFormatter = MultiRobotKeyFormatter) const;
 
@@ -139,7 +133,7 @@ class MRBayesTree {
 
     const KeySet& allKeys() const { return keys_; }
 
-    size_t size() const {return keys_.size(); }
+    size_t size() const { return keys_.size(); }
 
     /** edges pointing to this clique */
     const EdgeVector& parentEdges() const { return parent_edges_; }
@@ -161,14 +155,11 @@ class MRBayesTree {
 
     bool isChildOf(const SharedClique& clique) const;
 
-    FactorGraphType factorsInClique(const FactorGraphType& graph,
-                                    const VariableIndex& vi) const;
+    FactorGraphType factorsInClique(const FactorGraphType& graph, const VariableIndex& vi) const;
 
-    FactorIndices factorIndicesInClique(const FactorGraphType& graph,
-                                        const VariableIndex& vi) const;
+    FactorIndices factorIndicesInClique(const FactorGraphType& graph, const VariableIndex& vi) const;
 
-    std::string name(
-        const KeyFormatter& keyFormatter = MultiRobotKeyFormatter) const;
+    std::string name(const KeyFormatter& keyFormatter = MultiRobotKeyFormatter) const;
 
     void print(const KeyFormatter& keyFormatter = MultiRobotKeyFormatter) const;
 
@@ -192,17 +183,25 @@ class MRBayesTree {
 
   void print() const;
 
-  void setEdgeWeightBottomUp(std::map<SharedEdge, size_t>& edge_weights, const SharedClique& clique, const SharedClique& parent) const;
+  void setEdgeWeightBottomUp(std::map<SharedEdge, size_t>& edge_weights, const SharedClique& clique,
+                             const SharedClique& parent) const;
 
-  void setEdgeWeightTopDown(std::map<SharedEdge, size_t>& edge_weights, const SharedClique& clique, const SharedClique& child) const;
+  void setEdgeWeightTopDown(std::map<SharedEdge, size_t>& edge_weights, const SharedClique& clique,
+                            const SharedClique& child) const;
 
   size_t getWeight(const std::map<SharedEdge, size_t>& edge_weights, const SharedClique& clique) const;
 
-  void findBalanceNodeRecursive(const std::map<SharedEdge, size_t>& edge_weights, const SharedClique& clique, const SharedClique& parent, SharedClique& balance_node, size_t& balance_dist) const;
+  void findBalanceNodeRecursive(const std::map<SharedEdge, size_t>& edge_weights, const SharedClique& clique,
+                                const SharedClique& parent, SharedClique& balance_node, size_t& balance_dist) const;
 
-  void saveNodeRecursive(std::ofstream& o_file, const std::map<SharedClique, size_t>& clique_id_map, const SharedClique& clique, const SharedClique& parent, const CliqueSet& root_cliques,  const CliqueSet& top_cliques, const EdgeSet& prop_edges,const KeyFormatter& key_formatter) const;
+  void saveNodeRecursive(std::ofstream& o_file, const std::map<SharedClique, size_t>& clique_id_map,
+                         const SharedClique& clique, const SharedClique& parent, const CliqueSet& root_cliques,
+                         const CliqueSet& top_cliques, const EdgeSet& prop_edges,
+                         const KeyFormatter& key_formatter) const;
 
-  void saveGraph(const std::string& file_name, const CliqueSet& top_cliques = CliqueSet(), const EdgeSet& prop_edges = EdgeSet(), const KeyFormatter& keyFormatter = MultiRobotKeyFormatter) const;
+  void saveGraph(const std::string& file_name, const CliqueSet& top_cliques = CliqueSet(),
+                 const EdgeSet& prop_edges = EdgeSet(),
+                 const KeyFormatter& keyFormatter = MultiRobotKeyFormatter) const;
 
   /** perform dfs from the first root, and return all cliques */
   CliqueVector allCliques() const;
@@ -219,8 +218,7 @@ class MRBayesTree {
   LocationType defaultLayout() const;
 
   /** export the tree into a json file for visualization */
-  void exportTree(const std::string fileName,
-                  const LocationType& locations = LocationType()) const;
+  void exportTree(const std::string fileName, const LocationType& locations = LocationType()) const;
 
   bool checkMarginals() const;
 
@@ -236,8 +234,7 @@ class MRBayesTree {
    */
   KeyCliqueMap findCliquesByKeys(const KeySet& keys, const SharedClique& root);
 
-  CliqueVector findCliquesByKeys(const FastVector<KeySet>& keys_vec,
-                                 const SharedClique& root);
+  CliqueVector findCliquesByKeys(const FastVector<KeySet>& keys_vec, const SharedClique& root);
 
   /** disengage roots of the tree, so that the cliques won't be deleted on
    * calling destructor */
@@ -256,24 +253,22 @@ class MRBayesTree {
    * @param threshold threshold in wildfire spread of delta update
    * @param boundary_edges          boundary edges to stop the process
    */
-  void computeDelta(
-      const SharedClique& clique, const SharedClique& parent,
-      const FactorGraphType& graph, const VariableIndex& vi,
-      VectorValues& deltas, const double& threshold = 0,
-      boost::optional<EdgeSet&> boundary_edges = boost::none) const;
+  void computeDelta(const SharedClique& clique, const SharedClique& parent, const FactorGraphType& graph,
+                    const VariableIndex& vi, VectorValues& deltas, const double& threshold = 0,
+                    boost::optional<EdgeSet&> boundary_edges = boost::none) const;
 
   void printRoots() const {
     std::cout << "roots:\n";
-    for (const auto& it: roots_) {
+    for (const auto& it : roots_) {
       std::cout << it.first << ":\t" << it.second->name() << "\n";
     }
   }
 
-  size_t size() const {return allCliques().size(); }
+  size_t size() const { return allCliques().size(); }
 
   size_t largestCliqueSize() const {
     size_t largest_clique_size = 0;
-    for (const SharedClique& clique: allCliques()) {
+    for (const SharedClique& clique : allCliques()) {
       if (clique->size() > largest_clique_size) {
         largest_clique_size = clique->size();
       }
@@ -284,8 +279,7 @@ class MRBayesTree {
  protected:
   RootCliqueMap roots_;
 
-  SharedClique CopyFromJTByNode(
-      const typename JunctionTreeType::sharedCluster jt_node);
+  SharedClique CopyFromJTByNode(const typename JunctionTreeType::sharedCluster jt_node);
 
   /** recursively compute the marginal and conditional of the edges in the
    * direction that points away from the root, up to the boundary edges (not
@@ -300,11 +294,9 @@ class MRBayesTree {
    * @param elimination_function    function to perform variable elimination
    * @param boundary_edges          boundary edges to stop the process
    */
-  void eliminateNodeBottomUp(
-      const SharedClique& clique, const SharedClique& parent,
-      const FactorGraphType& graph, const VariableIndex& vi,
-      const Eliminate& elimination_function,
-      boost::optional<EdgeSet&> boundary_edges = boost::none);
+  void eliminateNodeBottomUp(const SharedClique& clique, const SharedClique& parent, const FactorGraphType& graph,
+                             const VariableIndex& vi, const Eliminate& elimination_function,
+                             boost::optional<EdgeSet&> boundary_edges = boost::none);
 
   /** recursively compute the marginal and conditional of the edges in the
    * direction that points to the root, up to the boundary edges (not including
@@ -319,11 +311,9 @@ class MRBayesTree {
    * @param elimination_function    function to perform variable elimination
    * @param boundary_edges          boundary edges to stop the process
    */
-  void eliminateNodeTopDown(
-      const SharedClique& clique, const SharedClique& child,
-      const FactorGraphType& graph, const VariableIndex& vi,
-      const Eliminate& elimination_function,
-      boost::optional<EdgeSet&> boundary_edges = boost::none);
+  void eliminateNodeTopDown(const SharedClique& clique, const SharedClique& child, const FactorGraphType& graph,
+                            const VariableIndex& vi, const Eliminate& elimination_function,
+                            boost::optional<EdgeSet&> boundary_edges = boost::none);
 
   /** do elimination across cliques to compute marginals and conditionals in all
    * edges of the tree
@@ -331,9 +321,7 @@ class MRBayesTree {
    * @param vi        variable index of the graph
    * @param elimination_function  function to do variable elimination
    */
-  void eliminate(const FactorGraphType& graph, const VariableIndex& vi,
-                 const Eliminate& elimination_function);
-
+  void eliminate(const FactorGraphType& graph, const VariableIndex& vi, const Eliminate& elimination_function);
 };
 
 typedef MRBayesTree<GaussianBayesTree, GaussianFactorGraph> GaussianMRBayesTree;

@@ -1,14 +1,14 @@
-#include "MRBayesTree.h"
+#include "mr_isam2/MRBayesTree.h"
 
+#include <gtsam/inference/LabeledSymbol.h>
 #include <gtsam/linear/GaussianEliminationTree.h>
 #include <gtsam/linear/GaussianJunctionTree.h>
-#include <gtsam/inference/LabeledSymbol.h>
 
 #include <fstream>
 #include <iomanip>
 #include <iostream>
 
-#include "Utils.h"
+#include "mr_isam2/Utils.h"
 
 namespace gtsam {
 
@@ -18,8 +18,7 @@ namespace gtsam {
 
 /* ************************************************************************* */
 template <class BayesTreeType, class FactorGraphType>
-MRBayesTree<BayesTreeType, FactorGraphType>::MRBayesTree(
-    const JunctionTreeType& junctionTree, RootID root_id) {
+MRBayesTree<BayesTreeType, FactorGraphType>::MRBayesTree(const JunctionTreeType& junctionTree, RootID root_id) {
   auto jt_root = junctionTree.roots()[0];
   roots_[root_id] = CopyFromJTByNode(jt_root);
 }
@@ -27,9 +26,7 @@ MRBayesTree<BayesTreeType, FactorGraphType>::MRBayesTree(
 /* ************************************************************************* */
 template <class BayesTreeType, class FactorGraphType>
 typename MRBayesTree<BayesTreeType, FactorGraphType>::SharedClique
-MRBayesTree<BayesTreeType, FactorGraphType>::CopyFromJTByNode(
-  const typename JunctionTreeType::sharedCluster jt_node) {
-  
+MRBayesTree<BayesTreeType, FactorGraphType>::CopyFromJTByNode(const typename JunctionTreeType::sharedCluster jt_node) {
   // create a MRBT clique
   SharedClique mrbt_node = boost::make_shared<Clique>();
   KeySet clique_keys = jt_node->factors.keys();
@@ -44,24 +41,23 @@ MRBayesTree<BayesTreeType, FactorGraphType>::CopyFromJTByNode(
     const KeySet& child_keys = mrbt_child->allKeys();
     KeySet frontal_keys(jt_child->orderedFrontalKeys.begin(), jt_child->orderedFrontalKeys.end());
     KeySet separator_keys;
-    std::set_difference(child_keys.begin(), child_keys.end(), frontal_keys.begin(), frontal_keys.end(), std::inserter(separator_keys, separator_keys.end()));
+    std::set_difference(child_keys.begin(), child_keys.end(), frontal_keys.begin(), frontal_keys.end(),
+                        std::inserter(separator_keys, separator_keys.end()));
     clique_keys.merge(separator_keys);
   }
 
   // set keys for current clique
-  mrbt_node -> setKeys(clique_keys);
+  mrbt_node->setKeys(clique_keys);
   return mrbt_node;
 }
 
-
 /* ************************************************************************* */
 template <class BayesTreeType, class FactorGraphType>
-MRBayesTree<BayesTreeType, FactorGraphType>::MRBayesTree(
-    const JunctionTreeType& junctionTree, const FactorGraphType& graph, RootID root_id,
-    const RootKeySetMap& other_root_keys_map, const bool symbolic, const Eliminate& elimination_function
-    )
+MRBayesTree<BayesTreeType, FactorGraphType>::MRBayesTree(const JunctionTreeType& junctionTree,
+                                                         const FactorGraphType& graph, RootID root_id,
+                                                         const RootKeySetMap& other_root_keys_map, const bool symbolic,
+                                                         const Eliminate& elimination_function)
     : MRBayesTree(junctionTree, root_id) {
-
   SharedClique jt_root_clique = roots_.at(root_id);
   const KeySet& jt_root_keys = jt_root_clique->allKeys();
 
@@ -112,12 +108,11 @@ MRBayesTree<BayesTreeType, FactorGraphType>::MRBayesTree(
 
 /* ************************************************************************* */
 template <class BayesTreeType, class FactorGraphType>
-MRBayesTree<BayesTreeType, FactorGraphType>::MRBayesTree(
-    const FactorGraphType& graph, const Ordering& order,
-    const RootID root_id, const RootKeySetMap& other_root_keys_map,
-    const bool symbolic, const Eliminate& elimination_function)
-    : MRBayesTree(GaussianJunctionTree(GaussianEliminationTree(graph, order)),
-                  graph, root_id, other_root_keys_map, symbolic, elimination_function) {}
+MRBayesTree<BayesTreeType, FactorGraphType>::MRBayesTree(const FactorGraphType& graph, const Ordering& order,
+                                                         const RootID root_id, const RootKeySetMap& other_root_keys_map,
+                                                         const bool symbolic, const Eliminate& elimination_function)
+    : MRBayesTree(GaussianJunctionTree(GaussianEliminationTree(graph, order)), graph, root_id, other_root_keys_map,
+                  symbolic, elimination_function) {}
 
 /* ************************************************************************* */
 template <class BayesTreeType, class FactorGraphType>
@@ -152,9 +147,8 @@ bool MRBayesTree<BayesTreeType, FactorGraphType>::Edge::dualDirection() const {
 
 /* ************************************************************************* */
 template <class BayesTreeType, class FactorGraphType>
-FactorIndices MRBayesTree<BayesTreeType, FactorGraphType>::Edge::elimFactorIndices(
-    const FactorGraphType& graph, const VariableIndex& vi) const {
-  
+FactorIndices MRBayesTree<BayesTreeType, FactorGraphType>::Edge::elimFactorIndices(const FactorGraphType& graph,
+                                                                                   const VariableIndex& vi) const {
   std::set<FactorIndex> factor_indices_set;
   // must have frontal keys
   for (auto frontal_key : frontalKeys()) {
@@ -162,8 +156,7 @@ FactorIndices MRBayesTree<BayesTreeType, FactorGraphType>::Edge::elimFactorIndic
       bool to_add = true;
       for (Key key : graph.at(factor_idx)->keys()) {
         // all keys should be either frontal or separator
-        if (childClique()->allKeys().find(key) ==
-            childClique()->allKeys().end()) {
+        if (childClique()->allKeys().find(key) == childClique()->allKeys().end()) {
           to_add = false;
           break;
         }
@@ -176,11 +169,10 @@ FactorIndices MRBayesTree<BayesTreeType, FactorGraphType>::Edge::elimFactorIndic
   return FactorIndices(factor_indices_set.begin(), factor_indices_set.end());
 }
 
-
 /* ************************************************************************* */
 template <class BayesTreeType, class FactorGraphType>
-FactorGraphType MRBayesTree<BayesTreeType, FactorGraphType>::Edge::elimFactors(
-    const FactorGraphType& graph, const VariableIndex& vi) const {
+FactorGraphType MRBayesTree<BayesTreeType, FactorGraphType>::Edge::elimFactors(const FactorGraphType& graph,
+                                                                               const VariableIndex& vi) const {
   FactorGraphType elim_graph;
   for (size_t i : elimFactorIndices(graph, vi)) {
     elim_graph.push_back(graph.at(i));
@@ -192,33 +184,27 @@ FactorGraphType MRBayesTree<BayesTreeType, FactorGraphType>::Edge::elimFactors(
 template <class BayesTreeType, class FactorGraphType>
 KeySet MRBayesTree<BayesTreeType, FactorGraphType>::Edge::frontalKeys() const {
   KeySet frontal_keys;
-  std::set_difference(
-      child_clique_->allKeys().begin(), child_clique_->allKeys().end(),
-      parent_clique_->allKeys().begin(), parent_clique_->allKeys().end(),
-      std::inserter(frontal_keys, frontal_keys.end()));
+  std::set_difference(child_clique_->allKeys().begin(), child_clique_->allKeys().end(),
+                      parent_clique_->allKeys().begin(), parent_clique_->allKeys().end(),
+                      std::inserter(frontal_keys, frontal_keys.end()));
   return frontal_keys;
 }
 
 /* ************************************************************************* */
 template <class BayesTreeType, class FactorGraphType>
-KeySet MRBayesTree<BayesTreeType, FactorGraphType>::Edge::separatorKeys()
-    const {
+KeySet MRBayesTree<BayesTreeType, FactorGraphType>::Edge::separatorKeys() const {
   KeySet separator_keys;
-  std::set_intersection(
-      parent_clique_->allKeys().begin(), parent_clique_->allKeys().end(),
-      child_clique_->allKeys().begin(), child_clique_->allKeys().end(),
-      std::inserter(separator_keys, separator_keys.end()));
+  std::set_intersection(parent_clique_->allKeys().begin(), parent_clique_->allKeys().end(),
+                        child_clique_->allKeys().begin(), child_clique_->allKeys().end(),
+                        std::inserter(separator_keys, separator_keys.end()));
   return separator_keys;
 }
 
 /* ************************************************************************* */
 template <class BayesTreeType, class FactorGraphType>
-std::string MRBayesTree<BayesTreeType, FactorGraphType>::Edge::name(
-    const KeyFormatter& keyFormatter) const {
-  return parentClique()->name(keyFormatter) + "->" +
-         childClique()->name(keyFormatter);
+std::string MRBayesTree<BayesTreeType, FactorGraphType>::Edge::name(const KeyFormatter& keyFormatter) const {
+  return parentClique()->name(keyFormatter) + "->" + childClique()->name(keyFormatter);
 }
-
 
 /* ************************************************************************* */
 /* ********************************* Clique ******************************** */
@@ -226,8 +212,7 @@ std::string MRBayesTree<BayesTreeType, FactorGraphType>::Edge::name(
 
 /* ************************************************************************* */
 template <class BayesTreeType, class FactorGraphType>
-void MRBayesTree<BayesTreeType, FactorGraphType>::Clique::addEdge(
-    SharedEdge edge) {
+void MRBayesTree<BayesTreeType, FactorGraphType>::Clique::addEdge(SharedEdge edge) {
   if (edge->parentClique().get() == this) {
     child_edges_.push_back(edge);
   } else if (edge->childClique().get() == this) {
@@ -240,8 +225,7 @@ void MRBayesTree<BayesTreeType, FactorGraphType>::Clique::addEdge(
 /* ************************************************************************* */
 template <class BayesTreeType, class FactorGraphType>
 const typename MRBayesTree<BayesTreeType, FactorGraphType>::SharedEdge&
-MRBayesTree<BayesTreeType, FactorGraphType>::Clique::parentEdge(
-    const SharedClique& parent) const {
+MRBayesTree<BayesTreeType, FactorGraphType>::Clique::parentEdge(const SharedClique& parent) const {
   for (const SharedEdge& edge : parent_edges_) {
     if (edge->parentClique() == parent) {
       return edge;
@@ -253,8 +237,7 @@ MRBayesTree<BayesTreeType, FactorGraphType>::Clique::parentEdge(
 /* ************************************************************************* */
 template <class BayesTreeType, class FactorGraphType>
 const typename MRBayesTree<BayesTreeType, FactorGraphType>::SharedEdge&
-MRBayesTree<BayesTreeType, FactorGraphType>::Clique::childEdge(
-    const SharedClique& child) const {
+MRBayesTree<BayesTreeType, FactorGraphType>::Clique::childEdge(const SharedClique& child) const {
   for (const SharedEdge& edge : child_edges_) {
     if (edge->childClique() == child) {
       return edge;
@@ -294,8 +277,7 @@ MRBayesTree<BayesTreeType, FactorGraphType>::Clique::neighborCliques() const {
     cliques.push_back(edge->parentClique());
   }
   for (SharedEdge edge : childEdges()) {
-    if (std::find(cliques.begin(), cliques.end(), edge->childClique()) ==
-        cliques.end()) {
+    if (std::find(cliques.begin(), cliques.end(), edge->childClique()) == cliques.end()) {
       cliques.push_back(edge->childClique());
     }
   }
@@ -304,8 +286,7 @@ MRBayesTree<BayesTreeType, FactorGraphType>::Clique::neighborCliques() const {
 
 /* ************************************************************************* */
 template <class BayesTreeType, class FactorGraphType>
-bool MRBayesTree<BayesTreeType, FactorGraphType>::Clique::isParentOf(
-    const SharedClique& clique) const {
+bool MRBayesTree<BayesTreeType, FactorGraphType>::Clique::isParentOf(const SharedClique& clique) const {
   for (const auto& edge : child_edges_) {
     if (edge->childClique() == clique) {
       return true;
@@ -316,8 +297,7 @@ bool MRBayesTree<BayesTreeType, FactorGraphType>::Clique::isParentOf(
 
 /* ************************************************************************* */
 template <class BayesTreeType, class FactorGraphType>
-bool MRBayesTree<BayesTreeType, FactorGraphType>::Clique::isChildOf(
-    const SharedClique& clique) const {
+bool MRBayesTree<BayesTreeType, FactorGraphType>::Clique::isChildOf(const SharedClique& clique) const {
   for (const auto& edge : parent_edges_) {
     if (edge->parentClique() == clique) {
       return true;
@@ -328,8 +308,7 @@ bool MRBayesTree<BayesTreeType, FactorGraphType>::Clique::isChildOf(
 
 /* ************************************************************************* */
 template <class BayesTreeType, class FactorGraphType>
-std::string MRBayesTree<BayesTreeType, FactorGraphType>::Clique::name(
-    const KeyFormatter& keyFormatter) const {
+std::string MRBayesTree<BayesTreeType, FactorGraphType>::Clique::name(const KeyFormatter& keyFormatter) const {
   std::string name_str;
   bool is_first = true;
   for (Key key : allKeys()) {
@@ -344,9 +323,8 @@ std::string MRBayesTree<BayesTreeType, FactorGraphType>::Clique::name(
 
 /* ************************************************************************* */
 template <class BayesTreeType, class FactorGraphType>
-FactorGraphType
-MRBayesTree<BayesTreeType, FactorGraphType>::Clique::factorsInClique(
-    const FactorGraphType& graph, const VariableIndex& vi) const {
+FactorGraphType MRBayesTree<BayesTreeType, FactorGraphType>::Clique::factorsInClique(const FactorGraphType& graph,
+                                                                                     const VariableIndex& vi) const {
   FactorGraphType factors_in_clique;
   for (size_t i : factorIndicesInClique(graph, vi)) {
     factors_in_clique.push_back(graph.at(i));
@@ -356,10 +334,8 @@ MRBayesTree<BayesTreeType, FactorGraphType>::Clique::factorsInClique(
 
 /* ************************************************************************* */
 template <class BayesTreeType, class FactorGraphType>
-FactorIndices
-MRBayesTree<BayesTreeType, FactorGraphType>::Clique::factorIndicesInClique(
+FactorIndices MRBayesTree<BayesTreeType, FactorGraphType>::Clique::factorIndicesInClique(
     const FactorGraphType& graph, const VariableIndex& vi) const {
-  
   std::set<FactorIndex> factor_indices_set;
 
   // must have frontal keys
@@ -382,16 +358,10 @@ MRBayesTree<BayesTreeType, FactorGraphType>::Clique::factorIndicesInClique(
   return FactorIndices(factor_indices_set.begin(), factor_indices_set.end());
 }
 
-
 template <class BayesTreeType, class FactorGraphType>
-void MRBayesTree<BayesTreeType, FactorGraphType>::Clique::removeEdge(
-    const SharedEdge& edge) {
-  parent_edges_.erase(
-      std::remove(parent_edges_.begin(), parent_edges_.end(), edge),
-      parent_edges_.end());
-  child_edges_.erase(
-      std::remove(child_edges_.begin(), child_edges_.end(), edge),
-      child_edges_.end());
+void MRBayesTree<BayesTreeType, FactorGraphType>::Clique::removeEdge(const SharedEdge& edge) {
+  parent_edges_.erase(std::remove(parent_edges_.begin(), parent_edges_.end(), edge), parent_edges_.end());
+  child_edges_.erase(std::remove(child_edges_.begin(), child_edges_.end(), edge), child_edges_.end());
 }
 
 template <class BayesTreeType, class FactorGraphType>
@@ -406,8 +376,8 @@ void MRBayesTree<BayesTreeType, FactorGraphType>::Clique::disEngage() {
 
 template <class BayesTreeType, class FactorGraphType>
 typename MRBayesTree<BayesTreeType, FactorGraphType>::CliqueVector
-MRBayesTree<BayesTreeType, FactorGraphType>::findCliquesByKeys(
-    const FastVector<KeySet>& keys_vec, const SharedClique& root_clique) {
+MRBayesTree<BayesTreeType, FactorGraphType>::findCliquesByKeys(const FastVector<KeySet>& keys_vec,
+                                                               const SharedClique& root_clique) {
   CliqueVector clique_vec(keys_vec.size(), nullptr);
   std::stack<std::pair<SharedClique, SharedClique>> dfs;
   dfs.push(std::make_pair(root_clique, root_clique));
@@ -456,8 +426,7 @@ MRBayesTree<BayesTreeType, FactorGraphType>::findCliquesByKeys(
 
 template <class BayesTreeType, class FactorGraphType>
 typename MRBayesTree<BayesTreeType, FactorGraphType>::KeyCliqueMap
-MRBayesTree<BayesTreeType, FactorGraphType>::findCliquesByKeys(
-    const KeySet& keys, const SharedClique& root_clique) {
+MRBayesTree<BayesTreeType, FactorGraphType>::findCliquesByKeys(const KeySet& keys, const SharedClique& root_clique) {
   KeyCliqueMap key_c_map;
   std::stack<std::pair<SharedClique, SharedClique>> dfs;
   dfs.push(std::make_pair(root_clique, root_clique));
@@ -492,8 +461,7 @@ MRBayesTree<BayesTreeType, FactorGraphType>::findCliquesByKeys(
 
 /* ************************************************************************* */
 template <class BayesTreeType, class FactorGraphType>
-void MRBayesTree<BayesTreeType, FactorGraphType>::addRoot(
-    const SharedClique& root_clique, RootID root_id) {
+void MRBayesTree<BayesTreeType, FactorGraphType>::addRoot(const SharedClique& root_clique, RootID root_id) {
   roots_[root_id] = root_clique;
   // start from other root cliques, ensure downward option is available, add
   // downward direction to corresponding cliques
@@ -522,8 +490,7 @@ void MRBayesTree<BayesTreeType, FactorGraphType>::addRoot(
 /* ************************************************************************* */
 template <class BayesTreeType, class FactorGraphType>
 void MRBayesTree<BayesTreeType, FactorGraphType>::eliminateNodeBottomUp(
-    const SharedClique& clique, const SharedClique& parent,
-    const FactorGraphType& graph, const VariableIndex& vi,
+    const SharedClique& clique, const SharedClique& parent, const FactorGraphType& graph, const VariableIndex& vi,
     const Eliminate& elimination_function, boost::optional<EdgeSet&> boundary_edges) {
   // std::cout << "processing clique " << clique->name() << " from parent " <<
   // parent->name() << "\n";
@@ -531,13 +498,12 @@ void MRBayesTree<BayesTreeType, FactorGraphType>::eliminateNodeBottomUp(
 
   // gather marginal information from chlid edges
   for (const SharedEdge& edge : clique->childEdges()) {
-    if (boundary_edges && (*boundary_edges).find(edge)!=(*boundary_edges).end()) {
+    if (boundary_edges && (*boundary_edges).find(edge) != (*boundary_edges).end()) {
       gathered_factors.add(edge->marginal());
       continue;
     }
     if (edge->childClique() != parent) {
-      eliminateNodeBottomUp(edge->childClique(), clique, graph, vi,
-                            elimination_function, boundary_edges);
+      eliminateNodeBottomUp(edge->childClique(), clique, graph, vi, elimination_function, boundary_edges);
       gathered_factors.add(edge->marginal());
     }
   }
@@ -561,13 +527,12 @@ void MRBayesTree<BayesTreeType, FactorGraphType>::eliminateNodeBottomUp(
 /* ************************************************************************* */
 template <class BayesTreeType, class FactorGraphType>
 void MRBayesTree<BayesTreeType, FactorGraphType>::eliminateNodeTopDown(
-    const SharedClique& clique, const SharedClique& child,
-    const FactorGraphType& graph, const VariableIndex& vi,
+    const SharedClique& clique, const SharedClique& child, const FactorGraphType& graph, const VariableIndex& vi,
     const Eliminate& elimination_function, boost::optional<EdgeSet&> boundary_edges) {
   // set marginals for the edge clique->child
-  if (clique!=child) {
+  if (clique != child) {
     SharedEdge edge = clique->childEdge(child);
-    if (boundary_edges && (*boundary_edges).find(edge)!=(*boundary_edges).end()) {
+    if (boundary_edges && (*boundary_edges).find(edge) != (*boundary_edges).end()) {
       return;
     }
 
@@ -596,23 +561,21 @@ void MRBayesTree<BayesTreeType, FactorGraphType>::eliminateNodeTopDown(
 }
 
 template <class BayesTreeType, class FactorGraphType>
-void MRBayesTree<BayesTreeType, FactorGraphType>::computeDelta(
-  const SharedClique& clique, const SharedClique& parent,
-  const FactorGraphType& graph, const VariableIndex& vi,
-  VectorValues& deltas, const double& threshold,
-  boost::optional<EdgeSet&> boundary_edges) const {
-
+void MRBayesTree<BayesTreeType, FactorGraphType>::computeDelta(const SharedClique& clique, const SharedClique& parent,
+                                                               const FactorGraphType& graph, const VariableIndex& vi,
+                                                               VectorValues& deltas, const double& threshold,
+                                                               boost::optional<EdgeSet&> boundary_edges) const {
   Vector original_values;
   bool values_changed = false;
 
   // set marginals for the edge clique->child
-  if (clique == parent) { // root clique
+  if (clique == parent) {  // root clique
     GaussianFactorGraph local_graph;
     local_graph.push_back(clique->factorsInClique(graph, vi));
     for (SharedEdge edge : clique->childEdges()) {
       local_graph.push_back(edge->marginal());
     }
-    if (threshold>0) {
+    if (threshold > 0) {
       KeyVector all_keys(clique->allKeys().begin(), clique->allKeys().end());
       original_values = deltas.vector(all_keys);
       deltas.update(local_graph.optimize());
@@ -620,17 +583,15 @@ void MRBayesTree<BayesTreeType, FactorGraphType>::computeDelta(
       if (diff.lpNorm<Eigen::Infinity>() >= threshold) {
         values_changed = true;
       }
-    }
-    else {
+    } else {
       deltas.update(local_graph.optimize());
     }
-  }
-  else {
+  } else {
     SharedEdge edge = parent->childEdge(clique);
-    if (boundary_edges && (*boundary_edges).find(edge)!=(*boundary_edges).end()) {
+    if (boundary_edges && (*boundary_edges).find(edge) != (*boundary_edges).end()) {
       return;
     }
-    if (threshold>0) {
+    if (threshold > 0) {
       KeySet frontal_keys_set = edge->frontalKeys();
       KeyVector frontal_keys(frontal_keys_set.begin(), frontal_keys_set.end());
       original_values = deltas.vector(frontal_keys);
@@ -639,34 +600,28 @@ void MRBayesTree<BayesTreeType, FactorGraphType>::computeDelta(
       if (diff.lpNorm<Eigen::Infinity>() >= threshold) {
         values_changed = true;
       }
-    }
-    else {
+    } else {
       deltas.update(edge->conditional()->solve(deltas));
     }
   }
 
   // propagate to further edges
-  if (threshold<=0 || values_changed) {
+  if (threshold <= 0 || values_changed) {
     for (const SharedClique& child : clique->childCliques()) {
       if (child != parent) {
         computeDelta(child, clique, graph, vi, deltas, threshold, boundary_edges);
       }
     }
   }
-
 }
-
 
 /* ************************************************************************* */
 template <class BayesTreeType, class FactorGraphType>
-void MRBayesTree<BayesTreeType, FactorGraphType>::eliminate(
-    const FactorGraphType& graph, const VariableIndex& vi,
-    const Eliminate& elimination_function) {
+void MRBayesTree<BayesTreeType, FactorGraphType>::eliminate(const FactorGraphType& graph, const VariableIndex& vi,
+                                                            const Eliminate& elimination_function) {
   const SharedClique& root_clique = roots_.begin()->second;
-  eliminateNodeBottomUp(root_clique, root_clique, graph, vi,
-                        elimination_function);
-  eliminateNodeTopDown(root_clique, root_clique, graph, vi,
-                       elimination_function);
+  eliminateNodeBottomUp(root_clique, root_clique, graph, vi, elimination_function);
+  eliminateNodeTopDown(root_clique, root_clique, graph, vi, elimination_function);
 }
 
 /* ************************************************************************* */
@@ -692,18 +647,16 @@ MRBayesTree<BayesTreeType, FactorGraphType>::allCliques() const {
     all_cliques.push_back(current_clique);
 
     for (SharedClique neighbor_clique : current_clique->neighborCliques()) {
-      if (neighbor_clique != parent_clique)
-        dfs.push(std::make_pair(neighbor_clique, current_clique));
+      if (neighbor_clique != parent_clique) dfs.push(std::make_pair(neighbor_clique, current_clique));
     }
   }
   return all_cliques;
 }
 
-
 /* ************************************************************************* */
 template <class BayesTreeType, class FactorGraphType>
-typename MRBayesTree<BayesTreeType, FactorGraphType>::EdgeVector
-MRBayesTree<BayesTreeType, FactorGraphType>::allEdges() const {
+typename MRBayesTree<BayesTreeType, FactorGraphType>::EdgeVector MRBayesTree<BayesTreeType, FactorGraphType>::allEdges()
+    const {
   EdgeVector all_edges;
   if (roots().empty()) {
     return all_edges;
@@ -726,8 +679,7 @@ MRBayesTree<BayesTreeType, FactorGraphType>::allEdges() const {
     }
 
     for (SharedClique neighbor_clique : current_clique->neighborCliques()) {
-      if (neighbor_clique != parent_clique)
-        dfs.push(std::make_pair(neighbor_clique, current_clique));
+      if (neighbor_clique != parent_clique) dfs.push(std::make_pair(neighbor_clique, current_clique));
     }
   }
   return all_edges;
@@ -757,9 +709,7 @@ MRBayesTree<BayesTreeType, FactorGraphType>::getNameEdgeMap() const {
 
 /* ************************************************************************* */
 template <class BayesTreeType, class FactorGraphType>
-bool
-MRBayesTree<BayesTreeType, FactorGraphType>::checkMarginals() const {
-
+bool MRBayesTree<BayesTreeType, FactorGraphType>::checkMarginals() const {
   SharedClique root_clique = roots_.begin()->second;
 
   std::stack<std::pair<SharedClique, SharedClique>> dfs;
@@ -802,12 +752,9 @@ MRBayesTree<BayesTreeType, FactorGraphType>::checkMarginals() const {
   return true;
 }
 
-
-
 /* ************************************************************************* */
 template <class BayesTreeType, class FactorGraphType>
-bool MRBayesTree<BayesTreeType, FactorGraphType>::Clique::equals(
-    const SharedClique& other) const {
+bool MRBayesTree<BayesTreeType, FactorGraphType>::Clique::equals(const SharedClique& other) const {
   if (name() != other->name()) {
     return false;
   }
@@ -864,8 +811,7 @@ bool MRBayesTree<BayesTreeType, FactorGraphType>::Clique::equals(
 
 /* ************************************************************************* */
 template <class BayesTreeType, class FactorGraphType>
-bool MRBayesTree<BayesTreeType, FactorGraphType>::Edge::equals(
-    const SharedEdge& other) const {
+bool MRBayesTree<BayesTreeType, FactorGraphType>::Edge::equals(const SharedEdge& other) const {
   if (parentClique()->name() != other->parentClique()->name()) {
     return false;
   }
@@ -910,8 +856,7 @@ bool MRBayesTree<BayesTreeType, FactorGraphType>::Edge::equals(
 
 /* ************************************************************************* */
 template <class BayesTreeType, class FactorGraphType>
-bool MRBayesTree<BayesTreeType, FactorGraphType>::equals(
-    const This& other) const {
+bool MRBayesTree<BayesTreeType, FactorGraphType>::equals(const This& other) const {
   if (roots_.size() != other.roots().size()) {
     return false;
   }
@@ -948,15 +893,13 @@ bool MRBayesTree<BayesTreeType, FactorGraphType>::equals(
 
 /* ************************************************************************* */
 template <class BayesTreeType, class FactorGraphType>
-void MRBayesTree<BayesTreeType, FactorGraphType>::Clique::print(
-    const KeyFormatter& keyFormatter) const {
+void MRBayesTree<BayesTreeType, FactorGraphType>::Clique::print(const KeyFormatter& keyFormatter) const {
   PrintKeySet(keys_, "", MultiRobotKeyFormatter);
 }
 
 /* ************************************************************************* */
 template <class BayesTreeType, class FactorGraphType>
-void MRBayesTree<BayesTreeType, FactorGraphType>::Edge::print(
-    const KeyFormatter& keyFormatter) const {
+void MRBayesTree<BayesTreeType, FactorGraphType>::Edge::print(const KeyFormatter& keyFormatter) const {
   std::cout << "parent: " << parentClique()->name() << "\n";
   std::cout << "child: " << childClique()->name() << "\n";
   std::cout << "marginal:\n";
@@ -993,8 +936,7 @@ void MRBayesTree<BayesTreeType, FactorGraphType>::print() const {
     for (size_t i = 0; i < current.depth; i++) {
       std::cout << "|";
     }
-    if (current.clique->isParentOf(current.parent) &&
-        current.parent->isParentOf(current.clique)) {
+    if (current.clique->isParentOf(current.parent) && current.parent->isParentOf(current.clique)) {
       std::cout << "<-> ";
     } else if (current.clique->isParentOf(current.parent)) {
       std::cout << "<- ";
@@ -1005,8 +947,7 @@ void MRBayesTree<BayesTreeType, FactorGraphType>::print() const {
 
     dfs.pop();
     for (SharedClique child : current.clique->neighborCliques()) {
-      if (child != current.parent)
-        dfs.push(DfsPrintEntry(current.depth + 1, child, current.clique));
+      if (child != current.parent) dfs.push(DfsPrintEntry(current.depth + 1, child, current.clique));
     }
   }
 }
@@ -1028,10 +969,7 @@ MRBayesTree<BayesTreeType, FactorGraphType>::defaultLayout() const {
 
       // assign locations for this layer
 
-      double x =
-          bfs_layer.size() == 1
-              ? 0
-              : (double)j / double(bfs_layer.size() - 1) * (2 * layer) - layer;
+      double x = bfs_layer.size() == 1 ? 0 : (double)j / double(bfs_layer.size() - 1) * (2 * layer) - layer;
       double y = layer;
       locations[current_clique] = (Vector(2) << x, y).finished();
 
@@ -1049,34 +987,37 @@ MRBayesTree<BayesTreeType, FactorGraphType>::defaultLayout() const {
   return locations;
 }
 
-
 template <class BayesTreeType, class FactorGraphType>
-void MRBayesTree<BayesTreeType, FactorGraphType>::setEdgeWeightBottomUp(std::map<SharedEdge, size_t>& edge_weights, const SharedClique& clique, const SharedClique& parent) const {
+void MRBayesTree<BayesTreeType, FactorGraphType>::setEdgeWeightBottomUp(std::map<SharedEdge, size_t>& edge_weights,
+                                                                        const SharedClique& clique,
+                                                                        const SharedClique& parent) const {
   // compute weight for all child edges
   size_t max_child_edge_weight = 0;
-  for (const SharedEdge& child_edge: clique->childEdges()) {
-    if (child_edge->dualDirection() && child_edge->childClique()!=parent) {
+  for (const SharedEdge& child_edge : clique->childEdges()) {
+    if (child_edge->dualDirection() && child_edge->childClique() != parent) {
       setEdgeWeightBottomUp(edge_weights, child_edge->childClique(), clique);
       max_child_edge_weight = std::max(max_child_edge_weight, edge_weights.at(child_edge));
     }
   }
   // set weight for this edge
-  if (clique!=parent) {
+  if (clique != parent) {
     edge_weights[parent->childEdge(clique)] = max_child_edge_weight + 1;
   }
 }
 
 template <class BayesTreeType, class FactorGraphType>
-void MRBayesTree<BayesTreeType, FactorGraphType>::setEdgeWeightTopDown(std::map<SharedEdge, size_t>& edge_weights, const SharedClique& clique, const SharedClique& child) const {
+void MRBayesTree<BayesTreeType, FactorGraphType>::setEdgeWeightTopDown(std::map<SharedEdge, size_t>& edge_weights,
+                                                                       const SharedClique& clique,
+                                                                       const SharedClique& child) const {
   // compute weight for this edge
-  if (clique!=child) {
+  if (clique != child) {
     size_t max_child_edge_weight = 0;
     for (const SharedEdge& child_edge : child->childEdges()) {
-      if (child_edge->dualDirection() && child_edge->childClique()!=clique) {
+      if (child_edge->dualDirection() && child_edge->childClique() != clique) {
         max_child_edge_weight = std::max(max_child_edge_weight, edge_weights.at(child_edge));
       }
     }
-    edge_weights[clique->childEdge(child)] = max_child_edge_weight+1;
+    edge_weights[clique->childEdge(child)] = max_child_edge_weight + 1;
   }
 
   // compute weight for parent edges
@@ -1087,9 +1028,9 @@ void MRBayesTree<BayesTreeType, FactorGraphType>::setEdgeWeightTopDown(std::map<
   }
 }
 
-
 template <class BayesTreeType, class FactorGraphType>
-size_t MRBayesTree<BayesTreeType, FactorGraphType>::getWeight(const std::map<SharedEdge, size_t>& edge_weights, const SharedClique& clique) const {
+size_t MRBayesTree<BayesTreeType, FactorGraphType>::getWeight(const std::map<SharedEdge, size_t>& edge_weights,
+                                                              const SharedClique& clique) const {
   size_t max_child_edge_weight = 0;
   for (const SharedEdge& child_edge : clique->childEdges()) {
     if (child_edge->dualDirection()) {
@@ -1101,8 +1042,8 @@ size_t MRBayesTree<BayesTreeType, FactorGraphType>::getWeight(const std::map<Sha
 
 template <class BayesTreeType, class FactorGraphType>
 void MRBayesTree<BayesTreeType, FactorGraphType>::findBalanceNodeRecursive(
-                     const std::map<SharedEdge, size_t>& edge_weights, 
-                     const SharedClique& clique, const SharedClique& parent, SharedClique& balance_node, size_t& balance_dist) const {
+    const std::map<SharedEdge, size_t>& edge_weights, const SharedClique& clique, const SharedClique& parent,
+    SharedClique& balance_node, size_t& balance_dist) const {
   // compare this node and balance node
   size_t dist = getWeight(edge_weights, clique);
   bool has_single_direction_edge = true;
@@ -1120,7 +1061,7 @@ void MRBayesTree<BayesTreeType, FactorGraphType>::findBalanceNodeRecursive(
 
   // check all following nodes
   for (const SharedEdge& child_edge : clique->childEdges()) {
-    if (child_edge->dualDirection() && child_edge->childClique()!=parent) {
+    if (child_edge->dualDirection() && child_edge->childClique() != parent) {
       findBalanceNodeRecursive(edge_weights, child_edge->childClique(), clique, balance_node, balance_dist);
     }
   }
@@ -1131,14 +1072,13 @@ std::string keysToString(const KeySet& keys, const KeyFormatter& key_formatter) 
   bool is_first = true;
   for (Key key : keys) {
     if (!is_first) {
-      str+=",";
+      str += ",";
     }
     std::string formatted_key;
     LabeledSymbol symbol(key);
     if (symbol.chr() == 'L') {
       formatted_key = "L" + std::to_string(symbol.index());
-    }
-    else {
+    } else {
       char robot_chr = symbol.label() - 1;
       formatted_key = robot_chr + std::to_string(symbol.index());
     }
@@ -1150,10 +1090,9 @@ std::string keysToString(const KeySet& keys, const KeyFormatter& key_formatter) 
 
 template <class BayesTreeType, class FactorGraphType>
 void MRBayesTree<BayesTreeType, FactorGraphType>::saveNodeRecursive(
-  std::ofstream& o_file, const std::map<SharedClique, size_t>& clique_id_map, 
-  const SharedClique& clique, const SharedClique& parent, 
-  const CliqueSet& root_cliques, const CliqueSet& top_cliques, 
-  const EdgeSet& prop_edges, const KeyFormatter& key_formatter) const {
+    std::ofstream& o_file, const std::map<SharedClique, size_t>& clique_id_map, const SharedClique& clique,
+    const SharedClique& parent, const CliqueSet& root_cliques, const CliqueSet& top_cliques, const EdgeSet& prop_edges,
+    const KeyFormatter& key_formatter) const {
   // save the node
   bool among_roots = false;
   for (const SharedEdge& child_edge : clique->childEdges()) {
@@ -1161,46 +1100,46 @@ void MRBayesTree<BayesTreeType, FactorGraphType>::saveNodeRecursive(
       among_roots = true;
       break;
     }
-  } 
+  }
   std::string name;
   if (among_roots || clique->parentEdges().size() == 0) {
     name = keysToString(clique->allKeys(), key_formatter);
-  }
-  else {
+  } else {
     SharedEdge parent_edge = clique->parentEdges()[0];
-    name = keysToString(parent_edge->frontalKeys(), key_formatter) + ":" + keysToString(parent_edge->separatorKeys(), key_formatter);
+    name = keysToString(parent_edge->frontalKeys(), key_formatter) + ":" +
+           keysToString(parent_edge->separatorKeys(), key_formatter);
   }
   if (root_cliques.find(clique) != root_cliques.end()) {
-    o_file << clique_id_map.at(clique)<<"[label="<< Quoted(name) << "penwidth=5 color=red fontsize=12];" << std::endl;
+    o_file << clique_id_map.at(clique) << "[label=" << Quoted(name) << "penwidth=5 color=red fontsize=12];"
+           << std::endl;
+  } else if (top_cliques.find(clique) != top_cliques.end()) {
+    o_file << clique_id_map.at(clique) << "[label=" << Quoted(name) << "penwidth=5 color=green fontsize=12];"
+           << std::endl;
+  } else {
+    o_file << clique_id_map.at(clique) << "[label=" << Quoted(name) << "penwidth=3 fontsize=12];" << std::endl;
   }
-  else if (top_cliques.find(clique) != top_cliques.end()) {
-    o_file << clique_id_map.at(clique)<<"[label="<< Quoted(name) << "penwidth=5 color=green fontsize=12];" << std::endl;
-  }
-  else {
-    o_file << clique_id_map.at(clique)<<"[label="<< Quoted(name) << "penwidth=3 fontsize=12];" << std::endl;
-  }
-  
 
   // save the edges
   for (const SharedEdge& child_edge : clique->childEdges()) {
     if (child_edge->childClique() != parent) {
       if (child_edge->dualDirection()) {
-        o_file << clique_id_map.at(child_edge->childClique()) << "->" << clique_id_map.at(clique) << "[penwidth=6 dir=both color=" + Quoted("blue:blue") + "]" <<std::endl;
+        o_file << clique_id_map.at(child_edge->childClique()) << "->" << clique_id_map.at(clique)
+               << "[penwidth=6 dir=both color=" + Quoted("blue:blue") + "]" << std::endl;
+      } else {
+        o_file << clique_id_map.at(clique) << "->" << clique_id_map.at(child_edge->childClique()) << "[penwidth=3]"
+               << std::endl;
       }
-      else {
-        o_file << clique_id_map.at(clique) << "->" << clique_id_map.at(child_edge->childClique()) << "[penwidth=3]" << std::endl;
-      }
-      saveNodeRecursive(o_file, clique_id_map, child_edge->childClique(), clique, root_cliques, top_cliques, prop_edges, key_formatter);
+      saveNodeRecursive(o_file, clique_id_map, child_edge->childClique(), clique, root_cliques, top_cliques, prop_edges,
+                        key_formatter);
     }
   }
 }
 
-
 /* ************************************************************************* */
 template <class BayesTreeType, class FactorGraphType>
-void MRBayesTree<BayesTreeType, FactorGraphType>::saveGraph(
-  const std::string& file_name, const CliqueSet& top_cliques, 
-  const EdgeSet& prop_edges, const KeyFormatter& key_formatter) const {
+void MRBayesTree<BayesTreeType, FactorGraphType>::saveGraph(const std::string& file_name, const CliqueSet& top_cliques,
+                                                            const EdgeSet& prop_edges,
+                                                            const KeyFormatter& key_formatter) const {
   // calculate edge weight (distance to furthest root) for al dual-direction edges
   SharedClique root_clique = roots_.begin()->second;
   std::map<SharedEdge, size_t> edge_weights;
@@ -1216,7 +1155,7 @@ void MRBayesTree<BayesTreeType, FactorGraphType>::saveGraph(
   std::map<SharedClique, size_t> clique_id_map;
   size_t clique_id = 0;
   for (const SharedClique& clique : allCliques()) {
-    clique_id ++;
+    clique_id++;
     clique_id_map[clique] = clique_id;
   }
 
@@ -1226,16 +1165,15 @@ void MRBayesTree<BayesTreeType, FactorGraphType>::saveGraph(
   for (const auto& it : roots_) {
     root_cliques.insert(it.second);
   }
-  saveNodeRecursive(o_file, clique_id_map, balance_node, balance_node, root_cliques, top_cliques, prop_edges, key_formatter);
+  saveNodeRecursive(o_file, clique_id_map, balance_node, balance_node, root_cliques, top_cliques, prop_edges,
+                    key_formatter);
   o_file << "}" << std::endl;
   o_file.close();
 }
 
-
-
 template <class BayesTreeType, class FactorGraphType>
-void MRBayesTree<BayesTreeType, FactorGraphType>::exportTree(
-    const std::string fileName, const LocationType& locations) const {
+void MRBayesTree<BayesTreeType, FactorGraphType>::exportTree(const std::string fileName,
+                                                             const LocationType& locations) const {
   CliqueVector cliques = allCliques();
 
   std::vector<std::string> clique_list;
@@ -1255,16 +1193,13 @@ void MRBayesTree<BayesTreeType, FactorGraphType>::exportTree(
         root_ids.push_back(it.first);
       }
     }
-    attributes.push_back(
-        std::make_pair(Quoted("name"), Quoted(clique->name())));
+    attributes.push_back(std::make_pair(Quoted("name"), Quoted(clique->name())));
     attributes.push_back(std::make_pair(Quoted("keys"), JsonList(keys, -1)));
-    attributes.push_back(
-        std::make_pair(Quoted("root"), is_root ? "true" : "false"));
+    attributes.push_back(std::make_pair(Quoted("root"), is_root ? "true" : "false"));
     if (locations.find(clique) != locations.end()) {
       std::string loc_string;
       auto location = locations.at(clique);
-      loc_string = "[" + std::to_string(location(0)) + ", " +
-                   std::to_string(location(1)) + "]";
+      loc_string = "[" + std::to_string(location(0)) + ", " + std::to_string(location(1)) + "]";
       attributes.push_back(std::make_pair(Quoted("location"), loc_string));
     }
 
@@ -1274,8 +1209,7 @@ void MRBayesTree<BayesTreeType, FactorGraphType>::exportTree(
       for (size_t i = 1; i < root_ids.size(); i++) {
         root_id_str += "," + std::to_string(root_ids[i]);
       }
-      attributes.push_back(
-          std::make_pair(Quoted("root_id"), Quoted(root_id_str)));
+      attributes.push_back(std::make_pair(Quoted("root_id"), Quoted(root_id_str)));
     }
     clique_list.push_back(JsonDict(attributes));
   }
@@ -1303,23 +1237,19 @@ void MRBayesTree<BayesTreeType, FactorGraphType>::exportTree(
         dual_direction = clique->parentEdge(neighbor_clique)->dualDirection();
       }
 
-      attributes.push_back(
-          std::make_pair(Quoted("name"), Quoted(parent_name + child_name)));
+      attributes.push_back(std::make_pair(Quoted("name"), Quoted(parent_name + child_name)));
       // attributes.push_back(std::make_pair(Quoted("variables"), "[" +
       // std::to_string(parentId) + ", " + std::to_string(childId) + "]"));
-      attributes.push_back(
-          std::make_pair(Quoted("parent"), Quoted(parent_name)));
+      attributes.push_back(std::make_pair(Quoted("parent"), Quoted(parent_name)));
       attributes.push_back(std::make_pair(Quoted("child"), Quoted(child_name)));
-      attributes.push_back(std::make_pair(Quoted("dualDirection"),
-                                          dual_direction ? "true" : "false"));
+      attributes.push_back(std::make_pair(Quoted("dualDirection"), dual_direction ? "true" : "false"));
       edge_list.push_back(JsonDict(attributes));
     }
   }
 
   std::string clique_list_str = JsonList(clique_list);
   std::string edge_list_str = JsonList(edge_list);
-  std::string all_str =
-      JsonList(std::vector<std::string>{clique_list_str, edge_list_str});
+  std::string all_str = JsonList(std::vector<std::string>{clique_list_str, edge_list_str});
 
   std::ofstream stm;
   stm.open(fileName);

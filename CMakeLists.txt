@@ -1,28 +1,18 @@
 cmake_minimum_required(VERSION 3.0)
-enable_testing()
 project(mr_isam2 CXX C)
 
-find_package(GTSAM REQUIRED) # Uses installed package
-include_directories(${GTSAM_INCLUDE_DIR})
-set(GTSAM_LIBS gtsam)
+set(CMAKE_CXX_STANDARD 17)
 
-find_package(GTSAMCMakeTools)
-include(GtsamMakeConfigFile)
-include(GtsamBuildTypes)
-include(GtsamTesting)
+# System Dependencies
+find_package(GTSAM REQUIRED)
 
-find_package(GTest REQUIRED)
-include_directories(${GTEST_INCLUDE_DIR})
-
-file(GLOB sources "*.cpp")
-file(GLOB headers "*.h")
-
-include_directories(".")
-
-add_library(mr_isam2 SHARED ${sources} ${headers})
-target_link_libraries(mr_isam2 ${GTSAM_LIBS})
+# Build the MR-iSAM2 Library
+file(GLOB_RECURSE mr_isam2_srcs "src/*.cpp" "include/*.h")
+add_library(mr_isam2 SHARED ${mr_isam2_srcs})
+target_link_libraries(mr_isam2 gtsam)
+target_include_directories(mr_isam2 PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}/include")
 set_target_properties(mr_isam2 PROPERTIES LINKER_LANGUAGE CXX)
 
-
+# Build the Tests
+# Run with `make check` (GTSAM standard language) 
 add_subdirectory(tests)
-add_subdirectory(scripts)

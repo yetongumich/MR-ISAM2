@@ -1,17 +1,16 @@
-#include "MRISAM2.h"
-#include "Utils.h"
-
 #include <CppUnitLite/TestHarness.h>
 #include <gtsam/base/Testable.h>
 #include <gtsam/base/TestableAssertions.h>
-
+#include <gtsam/inference/LabeledSymbol.h>
+#include <gtsam/inference/Symbol.h>
+#include <gtsam/linear/GaussianEliminationTree.h>
+#include <gtsam/linear/GaussianJunctionTree.h>
+#include <gtsam/nonlinear/GaussNewtonOptimizer.h>
 #include <gtsam/nonlinear/PriorFactor.h>
 #include <gtsam/slam/BetweenFactor.h>
-#include <gtsam/inference/Symbol.h>
-#include <gtsam/linear/GaussianJunctionTree.h>
-#include <gtsam/linear/GaussianEliminationTree.h>
-#include <gtsam/nonlinear/GaussNewtonOptimizer.h>
-#include <gtsam/inference/LabeledSymbol.h>
+
+#include "mr_isam2/MRISAM2.h"
+#include "mr_isam2/Utils.h"
 
 using namespace std;
 using namespace gtsam;
@@ -32,20 +31,19 @@ using namespace gtsam;
 typedef boost::shared_ptr<MRISAM2> SharedMRISAM2;
 void getOriginalGraphTree(NonlinearFactorGraph& graph, Values& values, SharedMRISAM2& mr_isam2) {
   SharedDiagonal model = noiseModel::Unit::Create(1);
-  graph +=
-    PriorFactor<double>(a1, 1.0, model),       // 0
-    PriorFactor<double>(b1, 1.0, model),       // 1
-    BetweenFactor<double>(a1, a2, 1.0, model), // 2
-    BetweenFactor<double>(b1, b2, 1.0, model), // 3
-    BetweenFactor<double>(a2, a3, 1.0, model), // 4
-    BetweenFactor<double>(b2, b3, 1.0, model), // 5
-    BetweenFactor<double>(a3, a4, 1.0, model), // 6
-    BetweenFactor<double>(b3, b4, 1.0, model), // 7
-    BetweenFactor<double>(a4, a5, 1.0, model), // 8
-    BetweenFactor<double>(b4, b5, 1.0, model), // 9
-    BetweenFactor<double>(a2, b3, 1.0, model), // 10
-    BetweenFactor<double>(a3, b3, 0.0, model), // 11
-    BetweenFactor<double>(a3, b4, 1.0, model); // 12
+  graph += PriorFactor<double>(a1, 1.0, model),   // 0
+      PriorFactor<double>(b1, 1.0, model),        // 1
+      BetweenFactor<double>(a1, a2, 1.0, model),  // 2
+      BetweenFactor<double>(b1, b2, 1.0, model),  // 3
+      BetweenFactor<double>(a2, a3, 1.0, model),  // 4
+      BetweenFactor<double>(b2, b3, 1.0, model),  // 5
+      BetweenFactor<double>(a3, a4, 1.0, model),  // 6
+      BetweenFactor<double>(b3, b4, 1.0, model),  // 7
+      BetweenFactor<double>(a4, a5, 1.0, model),  // 8
+      BetweenFactor<double>(b4, b5, 1.0, model),  // 9
+      BetweenFactor<double>(a2, b3, 1.0, model),  // 10
+      BetweenFactor<double>(a3, b3, 0.0, model),  // 11
+      BetweenFactor<double>(a3, b4, 1.0, model);  // 12
 
   values.insert(a1, 0.0);
   values.insert(a2, 0.0);
@@ -58,7 +56,7 @@ void getOriginalGraphTree(NonlinearFactorGraph& graph, Values& values, SharedMRI
   values.insert(b4, 0.0);
   values.insert(b5, 0.0);
 
-  Ordering order; 
+  Ordering order;
   order += b1, b2, a1, a2, b5, b3, b4, a3, a4, a5;
 
   GaussianMRBayesTree::RootKeySetMap root_keys_map;
@@ -70,50 +68,48 @@ void getOriginalGraphTree(NonlinearFactorGraph& graph, Values& values, SharedMRI
   mr_isam2 = boost::make_shared<MRISAM2>(graph, values, order, 0, root_keys_map);
 }
 
-/* Following 4 tests use the same scenario: 
+/* Following 4 tests use the same scenario:
  * Test Scenario:
  * graph:
  *  b1 - b2 - b3 - b4 - b5
  *          / |  /
- *  a1 - a2 - a3 - a4 - a5 
- * 
- * 
+ *  a1 - a2 - a3 - a4 - a5
+ *
+ *
  * new graph:
  *  b1 - b2 - b3 - b4 - b5 - b6
  *          / |  /
- *  a1 - a2 - a3 - a4 - a5 
+ *  a1 - a2 - a3 - a4 - a5
  *               \    /
  *                 a6
- * 
+ *
  * mrbt:
  *                 [a4,a5]
  *                   ||
  *    (b4,b5)      [a3,a4]
  *       \\         //
- *         (a3,b3,b4) 
+ *         (a3,b3,b4)
  *         /        \
  *     (b2,b3)     (a2,a3,b3)
  *        |          |
  *     (b1,b2)      (a1,a2)
- * 
+ *
  * new mrbt:
- *    (b5,b6)     
- *      ||             
+ *    (b5,b6)
+ *      ||
  *    (b4,b5)       [a3,a5,a6]
  *        \\        //      \
  *         (a3,b3,b4)       [a3,a4,a5]
  *         /        \
- *     (b2,b3)     (a2,a3,b3)   
+ *     (b2,b3)     (a2,a3,b3)
  *        |          |
  *     (b1,b2)      (a1,a2)
- * 
- * 
-*/
-
+ *
+ *
+ */
 
 /** check member functions */
 TEST(MRISAM2, Case1_member_functions) {
-
   // check static function
   KeySet clique_keys;
   clique_keys.insert(a1);
@@ -138,10 +134,8 @@ TEST(MRISAM2, Case1_member_functions) {
 
   // incremental update
   NonlinearFactorGraph new_factors_a;
-  new_factors_a +=
-    PriorFactor<double>(a6, 6.0, model),
-    BetweenFactor<double>(a5, a6, 1.0, model),
-    BetweenFactor<double>(a3, a6, 3.0, model);
+  new_factors_a += PriorFactor<double>(a6, 6.0, model), BetweenFactor<double>(a5, a6, 1.0, model),
+      BetweenFactor<double>(a3, a6, 3.0, model);
   Values new_values_a;
   new_values_a.insert(a6, 0.0);
 
@@ -219,7 +213,8 @@ TEST(MRISAM2, Case1_member_functions) {
   MRISAM2::EdgeVector orphan_edges = mr_isam2->extractTop(root_clique_a, top_cliques, top_factor_indices, top_keys);
   MRISAM2::EdgeSet orphan_edges_set(orphan_edges.begin(), orphan_edges.end());
   EXPECT(ContainerEqual<MRISAM2::EdgeSet>(expected_orphan_edges_set, orphan_edges_set));
-  std::set<size_t> expected_top_factor_indices_set(expected_top_factor_indices.begin(), expected_top_factor_indices.end());
+  std::set<size_t> expected_top_factor_indices_set(expected_top_factor_indices.begin(),
+                                                   expected_top_factor_indices.end());
   std::set<size_t> top_factor_indices_set(top_factor_indices.begin(), top_factor_indices.end());
   EXPECT(ContainerEqual<std::set<size_t>>(expected_top_factor_indices_set, top_factor_indices_set));
   EXPECT(ContainerEqual<KeySet>(expected_top_keys, top_keys));
@@ -237,10 +232,8 @@ TEST(MRISAM2, Case1_marginal_conditional_delta) {
 
   // incremental update
   NonlinearFactorGraph new_factors_a;
-  new_factors_a +=
-    PriorFactor<double>(a6, 6.0, model),
-    BetweenFactor<double>(a5, a6, 1.0, model),
-    BetweenFactor<double>(a3, a6, 3.0, model);
+  new_factors_a += PriorFactor<double>(a6, 6.0, model), BetweenFactor<double>(a5, a6, 1.0, model),
+      BetweenFactor<double>(a3, a6, 3.0, model);
   Values new_values_a;
   new_values_a.insert(a6, 0.0);
   mr_isam2->params().delta_update_threshold = 0;
@@ -251,7 +244,7 @@ TEST(MRISAM2, Case1_marginal_conditional_delta) {
   // marginals and conditionals by comparing to a new mrbt
   graph.push_back(new_factors_a);
   values.insert(new_values_a);
-  Ordering order_1; 
+  Ordering order_1;
   order_1 += b1, b2, a1, a2, b5, b3, b4, a4, a3, a5, a6;
 
   GaussianMRBayesTree::RootKeySetMap root_keys_map_1;
@@ -291,10 +284,8 @@ TEST(MRISAM2, Case1_relinearization) {
   // incremental update
   NonlinearFactorGraph new_factors_a;
   SharedDiagonal model = noiseModel::Unit::Create(1);
-  new_factors_a +=
-    PriorFactor<double>(a6, 6.0, model),
-    BetweenFactor<double>(a5, a6, 1.0, model),
-    BetweenFactor<double>(a3, a6, 3.0, model);
+  new_factors_a += PriorFactor<double>(a6, 6.0, model), BetweenFactor<double>(a5, a6, 1.0, model),
+      BetweenFactor<double>(a3, a6, 3.0, model);
   Values new_values_a;
   new_values_a.insert(a6, 0.0);
   mr_isam2->params().relinearization_threshold = 3.5;
@@ -307,7 +298,7 @@ TEST(MRISAM2, Case1_relinearization) {
   values.insert(new_values_a);
   values.update(a5, 5.0);
   values.update(a4, 4.0);
-  Ordering order_1; 
+  Ordering order_1;
   order_1 += b1, b2, a1, a2, b5, b3, b4, a4, a3, a5, a6;
 
   GaussianMRBayesTree::RootKeySetMap root_keys_map_1;
@@ -342,10 +333,8 @@ TEST(MRISAM2, Case1_wildfire) {
   new_values_b.insert(b6, 0.0);
   mr_isam2->updateRoot(1, new_factors_b, new_values_b, false);
 
-  new_factors_a +=
-    PriorFactor<double>(a6, 7.0, model),
-    BetweenFactor<double>(a5, a6, 1.0, model),
-    BetweenFactor<double>(a3, a6, 3.0, model);
+  new_factors_a += PriorFactor<double>(a6, 7.0, model), BetweenFactor<double>(a5, a6, 1.0, model),
+      BetweenFactor<double>(a3, a6, 3.0, model);
   Values new_values_a;
   new_values_a.insert(a6, 0.0);
   mr_isam2->updateRoot(0, new_factors_a, new_values_a, false);
@@ -362,23 +351,22 @@ TEST(MRISAM2, Case1_wildfire) {
   EXPECT(assert_equal(expected_delta, mr_isam2->delta()));
 
   // TODO: check marginal update
-
 }
 
 /* Test Scenario
  * graph:
  *  b1 - b2 - b3 - b4 - b5
  *          / |  /
- *  a1 - a2 - a3 - a4 - a5 
- * 
- * 
+ *  a1 - a2 - a3 - a4 - a5
+ *
+ *
  * new graph:
- *  b1 - b2 - b3 - b4 - b5 
+ *  b1 - b2 - b3 - b4 - b5
  *          / |  /
- *  a1 - a2 - a3 - a4 - a5 
+ *  a1 - a2 - a3 - a4 - a5
  *           \_      _/
  *               a6
- * 
+ *
  * mrbt:
  *                 [a4,a5]
  *                   ||
@@ -389,20 +377,20 @@ TEST(MRISAM2, Case1_wildfire) {
  *     (b2,b3)     [a2,a3,b3]
  *        |          |
  *     (b1,b2)      (a1,a2)
- * 
+ *
  * new mrbt:
- *    (b5,b6)     
- *      ||       
+ *    (b5,b6)
+ *      ||
  *    (b4,b5)       [a3,a5,a6]
  *       \\         //      \
  *         (a3,b3,b4)       [a3,a4,a5]
  *         /        \
- *     (b2,b3)     (a2,a3,b3)   
+ *     (b2,b3)     (a2,a3,b3)
  *        |          |
  *     (b1,b2)      (a1,a2)
- * 
- * 
-*/
+ *
+ *
+ */
 
 TEST(MRISAM2, Case2_structure) {
   // construct original MRBT
@@ -414,10 +402,8 @@ TEST(MRISAM2, Case2_structure) {
 
   // incremental update
   NonlinearFactorGraph new_factors_a;
-  new_factors_a +=
-    PriorFactor<double>(a6, 6.0, model),
-    BetweenFactor<double>(a5, a6, 1.0, model),
-    BetweenFactor<double>(a2, a6, 4.0, model);
+  new_factors_a += PriorFactor<double>(a6, 6.0, model), BetweenFactor<double>(a5, a6, 1.0, model),
+      BetweenFactor<double>(a2, a6, 4.0, model);
   Values new_values_a;
   new_values_a.insert(a6, 0.0);
   mr_isam2->params().delta_update_threshold = 0;
@@ -429,7 +415,7 @@ TEST(MRISAM2, Case2_structure) {
   std::cout << "creating new tree\n";
   graph.push_back(new_factors_a);
   values.insert(new_values_a);
-  Ordering order; 
+  Ordering order;
   order += b1, b2, b5, b4, b3, a4, a1, a3, a2, a5, a6;
 
   GaussianMRBayesTree::RootKeySetMap root_keys_map;
@@ -441,9 +427,7 @@ TEST(MRISAM2, Case2_structure) {
   MRISAM2 expected_mr_isam2_updatea(graph, values, order, 0, root_keys_map);
 
   EXPECT(mr_isam2->equals(expected_mr_isam2_updatea));
-
 }
-
 
 // TEST(MRISAM2, IncrementalUpdate3) {
 //   SharedDiagonal model = noiseModel::Unit::Create(1);
@@ -462,7 +446,6 @@ TEST(MRISAM2, Case2_structure) {
 //   mr_isam2->updateRoot(1, new_factors_b);
 //   mr_isam2->exportTree("../visualization/tree.json", mr_isam2->defaultLayout());
 // }
-
 
 int main() {
   TestResult tr;
